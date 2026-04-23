@@ -1,4 +1,9 @@
-const API_BASE = "https://transcription-statute-landing-achieving.trycloudflare.com";
+/*
+// Local development API URLs
+// const API_BASE = "http://localhost:4000";
+// const API_BASE = "https://abraham-casino-complexity-universe.trycloudflare.com/api";
+*/
+const API_BASE = "https://untitled-dancing-jean-discretion.trycloudflare.com";
 
 interface ApiOptions {
   method?: string;
@@ -25,6 +30,14 @@ async function apiFetch<T>(path: string, opts: ApiOptions = {}): Promise<T> {
 export interface AuthResponse {
   token: string;
   user: { id: number; email: string; name: string };
+}
+
+export interface DailyReport {
+  date: string;
+  summary: string;
+  triggered_insights: { message: string; category: string; severity: string }[];
+  personalized_tips: string[];
+  overall_score: number;
 }
 
 export interface LogPayload {
@@ -58,14 +71,6 @@ export interface LogResponse {
   updatedAt: string;
 }
 
-export interface DailyReport {
-  date: string;
-  summary: string;
-  triggered_insights: { message: string; category: string; severity: string }[];
-  personalized_tips: string[];
-  overall_score: number;
-}
-
 export const api = {
   register: (email: string, password: string, name: string) =>
     apiFetch<AuthResponse>("/api/auth/register", { method: "POST", body: { email, password, name } }),
@@ -93,7 +98,7 @@ export const api = {
     apiFetch<{ message: string; date: string }>(`/api/logs/${date}`, { method: "DELETE", token }),
 
   insights: (token: string) =>
-    apiFetch<{ summary: Record<string, unknown> & { general_tips?: string[] }; insights: unknown[]; message?: string }>("/api/insights", { token }),
+    apiFetch<{ summary: { total_insights: number; general_tips: string[] }; insights: any[]; message?: string }>("/api/insights", { token }),
 
   health: () =>
     apiFetch<{ status: string; version: string }>("/api/health"),
