@@ -4,12 +4,8 @@ import { Droplets, Moon, Dumbbell } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface Props {
-  sleepHours: number;
-  hydrationMl: number;
-  exerciseMinutes: number;
-  onSleepChange: (v: number) => void;
-  onHydrationChange: (v: number) => void;
-  onExerciseChange: (v: number) => void;
+  sleepHours: number; hydrationMl: number; exerciseMinutes: number;
+  onSleepChange: (v: number) => void; onHydrationChange: (v: number) => void; onExerciseChange: (v: number) => void;
 }
 
 function MetricCard({ icon: Icon, label, value, unit, color, glowColor, glowClass, min, max, step, gradientFrom, gradientTo, onChange, delay }: {
@@ -18,8 +14,7 @@ function MetricCard({ icon: Icon, label, value, unit, color, glowColor, glowClas
 }) {
   const pct = ((value - min) / (max - min)) * 100;
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay }}
-      whileHover={{ scale: 1.02 }} className={`glass-card p-3 ${glowClass} flex flex-col items-center gap-2`}>
+    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay }} whileHover={{ scale: 1.02 }} className={`glass-card p-3 ${glowClass} flex flex-col items-center gap-2`}>
       <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center`} style={{ boxShadow: `0 0 16px ${glowColor}` }}>
         <Icon className="w-4 h-4 text-white" />
       </div>
@@ -29,9 +24,7 @@ function MetricCard({ icon: Icon, label, value, unit, color, glowColor, glowClas
         <span className="text-[10px] text-text-muted">{unit}</span>
       </div>
       <div className="w-full relative">
-        <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))}
-          className="w-full h-1 rounded-full cursor-pointer"
-          style={{ background: `linear-gradient(to right, ${gradientFrom} 0%, ${gradientTo} ${pct}%, var(--slider-track) ${pct}%)` }} />
+        <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full h-1 rounded-full cursor-pointer" style={{ background: `linear-gradient(to right, ${gradientFrom} 0%, ${gradientTo} ${pct}%, var(--slider-track) ${pct}%)` }} />
       </div>
     </motion.div>
   );
