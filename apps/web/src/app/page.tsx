@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Save, CheckCircle, Loader2 } from "lucide-react";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
@@ -13,6 +13,11 @@ import SymptomToggleGrid from "@/components/SymptomToggleGrid";
 import DietLog from "@/components/DietLog";
 import StressSlider from "@/components/StressSlider";
 import WellnessMetrics from "@/components/WellnessMetrics";
+import BottomNav, { type NavView } from "@/components/BottomNav";
+import Timeline from "@/components/Timeline";
+import InsightsPanel from "@/components/InsightsPanel";
+import DailyReportModal from "@/components/DailyReportModal";
+import type { DailyReport } from "@/lib/api";
 
 export interface MealEntry {
   type: string;
@@ -48,6 +53,8 @@ function DailyLogPage() {
   const { user, token, loading: authLoading } = useAuth();
   const [log, setLog] = useState<DailyLogState>(INITIAL_STATE);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [activeView, setActiveView] = useState<NavView>("log");
+  const [dailyReport, setDailyReport] = useState<DailyReport | null>(null);
 
   const overallScore = useMemo(() => {
     const energyScore = log.energy;
@@ -67,7 +74,7 @@ function DailyLogPage() {
     setSaveState("saving");
     try {
       const today = new Date().toISOString().split("T")[0];
-      await api.saveLogs(token, {
+      const result = await api.saveLogs(token, {
         date: today,
         energy: log.energy,
         mood: log.mood,
@@ -85,6 +92,9 @@ function DailyLogPage() {
         })),
       });
       setSaveState("saved");
+      if (result.report) {
+        setDailyReport(result.report);
+      }
       setTimeout(() => setSaveState("idle"), 2500);
     } catch {
       setSaveState("idle");
@@ -111,96 +121,141 @@ function DailyLogPage() {
   return (
     <main className="flex flex-col min-h-screen">
       <Header />
-      <div className="flex-1 w-full max-w-lg mx-auto px-4 pb-28 pt-20 space-y-5">
-        <QuickLogSummary log={log} overallScore={overallScore} />
-        <EnergyMoodSliders
-          energy={log.energy}
-          mood={log.mood}
-          onEnergyChange={(v) => setLog((p) => ({ ...p, energy: v }))}
-          onMoodChange={(v) => setLog((p) => ({ ...p, mood: v }))}
-        />
-        <SymptomToggleGrid
-          selected={log.symptoms}
-          onChange={(symptoms) => setLog((p) => ({ ...p, symptoms }))}
-        />
-        <DietLog
-          meals={log.meals}
-          onMealsChange={(meals) => setLog((p) => ({ ...p, meals }))}
-        />
-        <StressSlider
-          value={log.stress}
-          onChange={(v) => setLog((p) => ({ ...p, stress: v }))}
-        />
-        <WellnessMetrics
-          sleepHours={log.sleepHours}
-          hydrationMl={log.hydrationMl}
-          exerciseMinutes={log.exerciseMinutes}
-          onSleepChange={(v) => setLog((p) => ({ ...p, sleepHours: v }))}
-          onHydrationChange={(v) => setLog((p) => ({ ...p, hydrationMl: v }))}
-          onExerciseChange={(v) => setLog((p) => ({ ...p, exerciseMinutes: v }))}
-        />
+      <div className="flex-1 w-full max-w-lg mx-auto px-4 pb-24 pt-20">
+        <AnimatePresence mode="wait">
+          {activeView === "log" && (
+            <motion.div
+              key="log"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.25 }}
+              className="space-y-5"
+            >
+              <QuickLogSummary log={log} overallScore={overallScore} />
+              <EnergyMoodSliders
+                energy={log.energy}
+                mood={log.mood}
+                onEnergyChange={(v) => setLog((p) => ({ ...p, energy: v }))}
+                onMoodChange={(v) => setLog((p) => ({ ...p, mood: v }))}
+              />
+              <SymptomToggleGrid
+                selected={log.symptoms}
+                onChange={(symptoms) => setLog((p) => ({ ...p, symptoms }))}
+              />
+              <DietLog
+                meals={log.meals}
+                onMealsChange={(meals) => setLog((p) => ({ ...p, meals }))}
+              />
+              <StressSlider
+                value={log.stress}
+                onChange={(v) => setLog((p) => ({ ...p, stress: v }))}
+              />
+              <WellnessMetrics
+                sleepHours={log.sleepHours}
+                hydrationMl={log.hydrationMl}
+                exerciseMinutes={log.exerciseMinutes}
+                onSleepChange={(v) => setLog((p) => ({ ...p, sleepHours: v }))}
+                onHydrationChange={(v) => setLog((p) => ({ ...p, hydrationMl: v }))}
+                onExerciseChange={(v) => setLog((p) => ({ ...p, exerciseMinutes: v }))}
+              />
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.75 }}
-          className="space-y-3"
-        >
-          <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider px-1">
-            Notes
-          </h3>
-          <div className="glass-card p-4">
-            <textarea
-              placeholder="How are you feeling today? Any additional notes..."
-              value={log.notes}
-              onChange={(e) => setLog((p) => ({ ...p, notes: e.target.value }))}
-              rows={3}
-              className="w-full bg-transparent text-sm text-text-primary placeholder:text-text-muted/40 resize-none focus:outline-none"
-            />
-          </div>
-        </motion.div>
-      </div>
-
-      <div className="fixed bottom-0 left-0 right-0 p-4 z-40" style={{ background: "linear-gradient(to top, #020617 0%, #020617ee 50%, transparent 100%)" }}>
-        <div className="max-w-lg mx-auto">
-          <motion.button
-            whileHover={{
-              scale: 1.01,
-              boxShadow: saveState === "saved"
-                ? "0 0 30px rgba(52, 211, 153, 0.4)"
-                : "0 0 30px rgba(129, 140, 248, 0.4), 0 0 60px rgba(129, 140, 248, 0.15)",
-            }}
-            whileTap={{ scale: 0.97 }}
-            onClick={handleSave}
-            disabled={saveState === "saving"}
-            className={`btn-premium-save w-full py-3.5 rounded-2xl font-semibold text-white text-base flex items-center justify-center gap-2 transition-all duration-300 ${
-              saveState === "saved"
-                ? "bg-accent-green shadow-xl shadow-accent-green/25"
-                : "bg-gradient-to-r from-accent-indigo to-accent-violet shadow-xl shadow-accent-indigo/25"
-            }`}
-          >
-            {saveState === "saving" ? (
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}>
-                <Loader2 className="w-5 h-5" />
-              </motion.div>
-            ) : saveState === "saved" ? (
+              {/* Notes */}
               <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="flex items-center gap-2"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.75 }}
+                className="space-y-3"
               >
-                <CheckCircle className="w-5 h-5" />
-                Log Saved!
+                <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider px-1">
+                  Notes
+                </h3>
+                <div className="glass-card p-4">
+                  <textarea
+                    placeholder="How are you feeling today? Any additional notes..."
+                    value={log.notes}
+                    onChange={(e) => setLog((p) => ({ ...p, notes: e.target.value }))}
+                    rows={3}
+                    className="w-full bg-transparent text-sm text-text-primary placeholder:text-text-muted/40 resize-none focus:outline-none"
+                  />
+                </div>
               </motion.div>
-            ) : (
-              <>
-                <Save className="w-5 h-5" />
-                Save Daily Log
-              </>
-            )}
-          </motion.button>
-        </div>
+
+              {/* Save button */}
+              <div className="pb-2">
+                <motion.button
+                  whileHover={{
+                    scale: 1.01,
+                    boxShadow: saveState === "saved"
+                      ? "0 0 30px rgba(52, 211, 153, 0.4)"
+                      : "0 0 30px rgba(129, 140, 248, 0.4), 0 0 60px rgba(129, 140, 248, 0.15)",
+                  }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleSave}
+                  disabled={saveState === "saving"}
+                  className={`btn-premium-save w-full py-3.5 rounded-2xl font-semibold text-white text-base flex items-center justify-center gap-2 transition-all duration-300 ${
+                    saveState === "saved"
+                      ? "bg-accent-green shadow-xl shadow-accent-green/25"
+                      : "bg-gradient-to-r from-accent-indigo to-accent-violet shadow-xl shadow-accent-indigo/25"
+                  }`}
+                >
+                  {saveState === "saving" ? (
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}>
+                      <Loader2 className="w-5 h-5" />
+                    </motion.div>
+                  ) : saveState === "saved" ? (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="flex items-center gap-2"
+                    >
+                      <CheckCircle className="w-5 h-5" />
+                      Log Saved!
+                    </motion.div>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5" />
+                      Save Daily Log
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {activeView === "timeline" && (
+            <motion.div
+              key="timeline"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.25 }}
+            >
+              <Timeline />
+            </motion.div>
+          )}
+
+          {activeView === "insights" && (
+            <motion.div
+              key="insights"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.25 }}
+            >
+              <InsightsPanel />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
+      <BottomNav active={activeView} onChange={setActiveView} />
+      {dailyReport && (
+        <DailyReportModal
+          report={dailyReport}
+          onClose={() => setDailyReport(null)}
+        />
+      )}
     </main>
   );
 }
