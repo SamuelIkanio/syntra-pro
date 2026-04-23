@@ -4,9 +4,14 @@ const fs = require("fs");
 const os = require("os");
 const { getDb } = require("./db");
 
-// Corrected path to the insight engine
+/*
+// Local development path (absolute)
 const ENGINE_DIR = "/root/workspace/background/syntra-insight-engine";
-const PYTHON = "python3";
+*/
+
+// Production/Repo path (relative to monorepo root)
+const ENGINE_DIR = process.env.SYNTRA_ENGINE_DIR || path.resolve(__dirname, "../../../packages/insight-engine");
+const PYTHON = process.env.SYNTRA_PYTHON || "python3";
 
 function buildDatasetFromDb(userId) {
   const db = getDb();
