@@ -3,10 +3,9 @@ node_modules/
 out/
 package-lock.json
 *.db
-*.db-wal
 *.db-shm
+*.db-wal
+.upload/
+.DS_Store
 .env
 .env.local
-dist/
-.DS_Store
-*.log

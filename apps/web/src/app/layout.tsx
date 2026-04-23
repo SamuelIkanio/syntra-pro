@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SYNTRA Pro — Health Intelligence",
+  title: "SYNTRA Pro - Health Intelligence",
   description: "Premium health tracking & insights for Triune Dynamic Limited",
 };
 

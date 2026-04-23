@@ -6,7 +6,9 @@ const DB_PATH = process.env.SYNTRA_DB_PATH || path.resolve(__dirname, "../../dat
 
 function ensureDir(filePath) {
   const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
 }
 
 let _db = null;
@@ -31,6 +33,7 @@ function initSchema(db) {
       name TEXT NOT NULL DEFAULT '',
       created_at TEXT DEFAULT (datetime('now'))
     );
+
     CREATE TABLE IF NOT EXISTS daily_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -48,6 +51,7 @@ function initSchema(db) {
       UNIQUE(user_id, date),
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
+
     CREATE TABLE IF NOT EXISTS symptoms (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       log_id INTEGER NOT NULL,
@@ -56,6 +60,7 @@ function initSchema(db) {
       severity INTEGER DEFAULT 5 CHECK(severity BETWEEN 1 AND 10),
       FOREIGN KEY (log_id) REFERENCES daily_logs(id) ON DELETE CASCADE
     );
+
     CREATE TABLE IF NOT EXISTS diet_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       log_id INTEGER NOT NULL,
@@ -67,6 +72,7 @@ function initSchema(db) {
       tags TEXT DEFAULT '[]',
       FOREIGN KEY (log_id) REFERENCES daily_logs(id) ON DELETE CASCADE
     );
+
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
     CREATE INDEX IF NOT EXISTS idx_daily_logs_user_date ON daily_logs(user_id, date);
     CREATE INDEX IF NOT EXISTS idx_daily_logs_date ON daily_logs(date);
@@ -77,7 +83,15 @@ function initSchema(db) {
   `);
 }
 
-function closeDb() { if (_db) { _db.close(); _db = null; } }
-function resetDb() { _db = null; }
+function closeDb() {
+  if (_db) {
+    _db.close();
+    _db = null;
+  }
+}
+
+function resetDb() {
+  _db = null;
+}
 
 module.exports = { getDb, closeDb, resetDb, DB_PATH };

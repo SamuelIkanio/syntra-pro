@@ -13,7 +13,10 @@ const loginSchema = z.object({
 
 const symptomSchema = z.union([
   z.string().min(1),
-  z.object({ name: z.string().min(1), severity: z.number().int().min(1).max(10).optional().default(5) }),
+  z.object({
+    name: z.string().min(1),
+    severity: z.number().int().min(1).max(10).optional().default(5),
+  }),
 ]);
 
 const mealSchema = z.object({
@@ -55,7 +58,10 @@ function validate(schema) {
   return (req, res, next) => {
     const result = schema.safeParse(req.body);
     if (!result.success) {
-      const errors = result.error.issues.map(i => ({ field: i.path.join("."), message: i.message }));
+      const errors = result.error.issues.map(i => ({
+        field: i.path.join("."),
+        message: i.message,
+      }));
       return res.status(400).json({ error: "Validation failed", details: errors });
     }
     req.validatedBody = result.data;
@@ -67,7 +73,10 @@ function validateQuery(schema) {
   return (req, res, next) => {
     const result = schema.safeParse(req.query);
     if (!result.success) {
-      const errors = result.error.issues.map(i => ({ field: i.path.join("."), message: i.message }));
+      const errors = result.error.issues.map(i => ({
+        field: i.path.join("."),
+        message: i.message,
+      }));
       return res.status(400).json({ error: "Invalid query parameters", details: errors });
     }
     req.validatedQuery = result.data;
@@ -79,7 +88,10 @@ function validateParams(schema) {
   return (req, res, next) => {
     const result = schema.safeParse(req.params);
     if (!result.success) {
-      const errors = result.error.issues.map(i => ({ field: i.path.join("."), message: i.message }));
+      const errors = result.error.issues.map(i => ({
+        field: i.path.join("."),
+        message: i.message,
+      }));
       return res.status(400).json({ error: "Invalid parameters", details: errors });
     }
     req.validatedParams = result.data;
@@ -87,4 +99,13 @@ function validateParams(schema) {
   };
 }
 
-module.exports = { registerSchema, loginSchema, createLogSchema, getLogsQuerySchema, dateParamSchema, validate, validateQuery, validateParams };
+module.exports = {
+  registerSchema,
+  loginSchema,
+  createLogSchema,
+  getLogsQuerySchema,
+  dateParamSchema,
+  validate,
+  validateQuery,
+  validateParams,
+};

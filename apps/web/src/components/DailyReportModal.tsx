@@ -50,7 +50,6 @@ export default function DailyReportModal({ report, onClose }: Props) {
         className="fixed inset-0 z-[100] flex items-center justify-center px-4"
         data-testid="daily-report-modal"
       >
-        {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -60,7 +59,6 @@ export default function DailyReportModal({ report, onClose }: Props) {
           onClick={onClose}
         />
 
-        {/* Modal Content */}
         <motion.div
           initial={{ opacity: 0, scale: 0.92, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -71,11 +69,9 @@ export default function DailyReportModal({ report, onClose }: Props) {
             background: "rgba(15, 23, 42, 0.92)",
             backdropFilter: "blur(24px) saturate(1.4)",
             border: "1px solid rgba(255, 255, 255, 0.10)",
-            boxShadow:
-              "0 0 60px rgba(129, 140, 248, 0.12), 0 25px 50px rgba(0, 0, 0, 0.5)",
+            boxShadow: "0 0 60px rgba(129, 140, 248, 0.12), 0 25px 50px rgba(0, 0, 0, 0.5)",
           }}
         >
-          {/* Header */}
           <div className="flex items-center justify-between p-5 pb-3">
             <div className="flex items-center gap-2.5">
               <div
@@ -88,9 +84,7 @@ export default function DailyReportModal({ report, onClose }: Props) {
                 <FileText className="w-5 h-5 text-accent-indigo" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-text-primary">
-                  Daily Report
-                </h2>
+                <h2 className="text-base font-bold text-text-primary">Daily Report</h2>
                 <span className="text-[10px] text-text-muted">{report.date}</span>
               </div>
             </div>
@@ -105,17 +99,11 @@ export default function DailyReportModal({ report, onClose }: Props) {
           </div>
 
           <div className="px-5 pb-5 space-y-4">
-            {/* Summary */}
             <div className="glass-card p-4" data-testid="report-summary">
-              <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
-                Summary
-              </h3>
-              <p className="text-sm text-text-secondary leading-relaxed">
-                {report.summary}
-              </p>
+              <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Summary</h3>
+              <p className="text-sm text-text-secondary leading-relaxed">{report.summary}</p>
             </div>
 
-            {/* Triggered Insights */}
             {report.triggered_insights.length > 0 && (
               <div data-testid="report-insights">
                 <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 px-1 flex items-center gap-1.5">
@@ -132,16 +120,10 @@ export default function DailyReportModal({ report, onClose }: Props) {
                       data-testid={`report-insight-${idx}`}
                     >
                       <div className="flex items-start gap-2.5">
-                        <div className="mt-0.5 flex-shrink-0">
-                          {severityIcon(insight.severity)}
-                        </div>
+                        <div className="mt-0.5 flex-shrink-0">{severityIcon(insight.severity)}</div>
                         <div className="flex-1 min-w-0">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-                            {insight.category}
-                          </span>
-                          <p className="text-sm text-text-secondary leading-relaxed mt-0.5">
-                            {insight.message}
-                          </p>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">{insight.category}</span>
+                          <p className="text-sm text-text-secondary leading-relaxed mt-0.5">{insight.message}</p>
                         </div>
                       </div>
                     </motion.div>
@@ -150,7 +132,6 @@ export default function DailyReportModal({ report, onClose }: Props) {
               </div>
             )}
 
-            {/* Personalized Tips */}
             {report.personalized_tips.length > 0 && (
               <div data-testid="report-tips">
                 <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 px-1 flex items-center gap-1.5">
@@ -168,22 +149,17 @@ export default function DailyReportModal({ report, onClose }: Props) {
                     >
                       <div
                         className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-                        style={{
-                          background: "linear-gradient(135deg, rgba(167, 139, 250, 0.15), rgba(129, 140, 248, 0.15))",
-                        }}
+                        style={{ background: "linear-gradient(135deg, rgba(167, 139, 250, 0.15), rgba(129, 140, 248, 0.15))" }}
                       >
                         <CheckCircle2 className="w-3.5 h-3.5 text-accent-violet" />
                       </div>
-                      <p className="text-sm text-text-secondary leading-relaxed">
-                        {tip}
-                      </p>
+                      <p className="text-sm text-text-secondary leading-relaxed">{tip}</p>
                     </motion.div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Dismiss Button */}
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={onClose}

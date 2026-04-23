@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
+  // Allow Cloudflare tunnel hosts for development
+  // @ts-ignore
+  allowedDevOrigins: ["present-deal-steam-tonight.trycloudflare.com"]
 };
 
 export default nextConfig;
