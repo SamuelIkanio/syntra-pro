@@ -1,26 +1,28 @@
-const API_ENDPOINTS = {
-  health: "GET /api/health",
-  login: "POST /api/auth/login",
-  register: "POST /api/auth/register",
-  me: "GET /api/auth/me",
-  saveLogs: "POST /api/logs",
-  getLogs: "GET /api/logs",
-  getLogByDate: "GET /api/logs/:date",
-  deleteLogs: "DELETE /api/logs/:date",
-  insights: "GET /api/insights",
-};
+// Shared utilities for SYNTRA Pro
 
-const SEVERITY_LEVELS = {
-  info: "info",
-  warning: "warning",
-  critical: "critical",
-};
-
-const SYMPTOM_LIST = [
-  "fatigue", "headache", "bloating", "nausea", "insomnia",
-  "anxiety", "dehydration", "eye_strain", "fever",
+const SYMPTOM_OPTIONS = [
+  "headache", "fatigue", "nausea", "dizziness", "insomnia",
+  "back_pain", "anxiety", "bloating", "joint_pain", "brain_fog",
+  "chest_tightness", "eye_strain"
 ];
 
 const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
-module.exports = { API_ENDPOINTS, SEVERITY_LEVELS, SYMPTOM_LIST, MEAL_TYPES };
+const HEALTH_SCORE_LABELS = {
+  1: "Very Poor",
+  2: "Poor",
+  3: "Average",
+  4: "Good",
+  5: "Excellent"
+};
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+}
+
+function calculateOverallScore(energy, mood, stress) {
+  return Math.round(((energy + mood + (10 - stress)) / 3) * 10) / 10;
+}
+
+module.exports = { SYMPTOM_OPTIONS, MEAL_TYPES, HEALTH_SCORE_LABELS, formatDate, calculateOverallScore };
