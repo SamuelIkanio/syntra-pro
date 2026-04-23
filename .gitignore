@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+package-lock.json
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.local
+dist/
+.DS_Store
+*.log
