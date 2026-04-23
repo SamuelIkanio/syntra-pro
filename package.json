@@ -1,0 +1,10 @@
+{
+  "name": "syntra-pro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SYNTRA Pro Health Tracker for Triune Dynamic Limited",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
