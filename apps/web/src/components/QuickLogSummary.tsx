@@ -1,90 +1,102 @@
 "use client";
 
-import { Zap, Smile, AlertTriangle, Utensils } from "lucide-react";
 import { motion } from "framer-motion";
-import type { DailyLogState } from "@/app/page";
+import { TrendingUp, Save, Sparkles } from "lucide-react";
 
-interface Props { log: DailyLogState; overallScore: number; }
-
-function scoreColor(score: number): string {
-  if (score >= 7) return "text-accent-green";
-  if (score >= 4) return "text-accent-amber";
-  return "text-accent-rose";
-}
-function ringStroke(score: number): string {
-  if (score >= 7) return "#34d399";
-  if (score >= 4) return "#fbbf24";
-  return "#fb7185";
-}
-function ringGlowColor(score: number): string {
-  if (score >= 7) return "rgba(52, 211, 153, 0.5)";
-  if (score >= 4) return "rgba(251, 191, 36, 0.5)";
-  return "rgba(251, 113, 133, 0.5)";
+interface Props {
+  energy: number;
+  mood: number;
+  stress: number;
+  symptomCount: number;
+  mealCount: number;
+  sleepHours: number;
+  hydrationMl: number;
+  exerciseMinutes: number;
+  onSave: () => void;
+  saving: boolean;
+  saveSuccess: boolean;
 }
 
-function ScoreRing({ score }: { score: number }) {
-  const pct = (score / 10) * 100;
-  const radius = 38;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (pct / 100) * circumference;
-  const stroke = ringStroke(score);
-  const glowColor = ringGlowColor(score);
+export default function QuickLogSummary({
+  energy, mood, stress, symptomCount, mealCount,
+  sleepHours, hydrationMl, exerciseMinutes,
+  onSave, saving, saveSuccess,
+}: Props) {
+  const overallScore = Math.round(((energy + mood + (10 - stress)) / 3) * 10) / 10;
+
+  function getScoreColor(score: number): string {
+    if (score >= 7) return "#34d399";
+    if (score >= 5) return "#fbbf24";
+    return "#fb7185";
+  }
+
+  function getScoreLabel(score: number): string {
+    if (score >= 8) return "Excellent";
+    if (score >= 6) return "Good";
+    if (score >= 4) return "Fair";
+    return "Needs Attention";
+  }
+
+  const color = getScoreColor(overallScore);
+
   return (
-    <div className="relative w-24 h-24 flex-shrink-0">
-      <svg className="w-full h-full -rotate-90" viewBox="0 0 84 84">
-        <defs>
-          <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={stroke} stopOpacity="0.3" />
-            <stop offset="100%" stopColor={stroke} stopOpacity="0.05" />
-          </linearGradient>
-          <filter id="ringGlow">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-        </defs>
-        <circle cx="42" cy="42" r={radius} fill="none" strokeWidth="5" stroke="url(#ringGradient)" />
-        <motion.circle cx="42" cy="42" r={radius} fill="none" strokeWidth="5" strokeLinecap="round" stroke={stroke}
-          strokeDasharray={circumference} initial={{ strokeDashoffset: circumference }} animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.4, ease: "easeOut" }} filter="url(#ringGlow)" />
-      </svg>
-      <div className="absolute inset-0 rounded-full" style={{ background: `radial-gradient(circle, ${glowColor} 0%, transparent 70%)`, opacity: 0.15 }} />
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.span key={score} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }}
-          className={`text-xl font-bold ${scoreColor(score)}`}>{score.toFixed(1)}</motion.span>
-        <span className="text-[10px] text-text-muted -mt-0.5">/ 10</span>
-      </div>
-    </div>
-  );
-}
-
-export default function QuickLogSummary({ log, overallScore }: Props) {
-  const items = [
-    { icon: Zap, label: "Energy", value: log.energy, color: "text-accent-amber", glow: "bg-accent-amber-glow" },
-    { icon: Smile, label: "Mood", value: log.mood, color: "text-accent-indigo", glow: "bg-accent-indigo-glow" },
-    { icon: AlertTriangle, label: "Symptoms", value: log.symptoms.length, color: "text-accent-rose", glow: "bg-accent-rose-glow", suffix: "" },
-    { icon: Utensils, label: "Meals", value: log.meals.length, color: "text-accent-green", glow: "bg-accent-green-glow", suffix: "" },
-  ];
-  return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="glass-card p-5 glow-indigo">
-      <div className="flex items-center gap-5">
-        <ScoreRing score={overallScore} />
-        <div className="flex-1 min-w-0">
-          <h2 className="text-sm font-semibold text-text-primary mb-0.5 tracking-tight">Quick Log Summary</h2>
-          <p className="text-xs text-text-muted mb-3">
-            {overallScore >= 7 ? "Looking great today! 🎉" : overallScore >= 4 ? "Solid tracking — keep it up!" : "Take it easy today 💛"}
-          </p>
-          <div className="grid grid-cols-4 gap-2">
-            {items.map((item, i) => (
-              <motion.div key={item.label} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, delay: 0.2 + i * 0.08 }}
-                className="flex flex-col items-center rounded-xl bg-white/[0.04] py-2 px-1 border border-white/[0.06] backdrop-blur-sm">
-                <item.icon className={`w-3.5 h-3.5 ${item.color} mb-0.5`} />
-                <span className={`text-sm font-bold ${item.color}`}>{item.value}{item.suffix !== undefined ? item.suffix : "/10"}</span>
-                <span className="text-[9px] text-text-muted">{item.label}</span>
-              </motion.div>
-            ))}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.9 }}
+      className="space-y-3"
+    >
+      <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider px-1">
+        Daily Summary
+      </h3>
+      <div className="glass-card p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4" style={{ color }} />
+            <span className="text-sm font-semibold text-text-primary">Overall Score</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <motion.span
+              key={overallScore}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="text-2xl font-bold tabular-nums"
+              style={{ color }}
+            >
+              {overallScore}
+            </motion.span>
+            <span className="text-xs px-2 py-0.5 rounded-full border font-medium" style={{ color, borderColor: `${color}30`, backgroundColor: `${color}10` }}>
+              {getScoreLabel(overallScore)}
+            </span>
           </div>
         </div>
+
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="text-xs"><span className="block text-text-muted">Symptoms</span><span className="text-text-primary font-semibold">{symptomCount}</span></div>
+          <div className="text-xs"><span className="block text-text-muted">Meals</span><span className="text-text-primary font-semibold">{mealCount}</span></div>
+          <div className="text-xs"><span className="block text-text-muted">Sleep</span><span className="text-text-primary font-semibold">{sleepHours}h</span></div>
+        </div>
+
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={onSave}
+          disabled={saving}
+          data-testid="save-log-button"
+          className={`w-full py-3 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition-all duration-300 ${
+            saveSuccess
+              ? "bg-accent-green/20 text-accent-green border border-accent-green/30"
+              : "bg-gradient-to-r from-accent-indigo to-accent-violet text-white shadow-lg shadow-accent-indigo/30 hover:shadow-accent-indigo/50"
+          }`}
+        >
+          {saving ? (
+            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" />
+          ) : saveSuccess ? (
+            <><Sparkles className="w-4 h-4" /> Saved Successfully!</>
+          ) : (
+            <><Save className="w-4 h-4" /> Save Daily Log</>
+          )}
+        </motion.button>
       </div>
     </motion.div>
   );
