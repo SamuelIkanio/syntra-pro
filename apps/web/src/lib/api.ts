@@ -58,6 +58,14 @@ export interface LogResponse {
   updatedAt: string;
 }
 
+export interface DailyReport {
+  date: string;
+  summary: string;
+  triggered_insights: { message: string; category: string; severity: string }[];
+  personalized_tips: string[];
+  overall_score: number;
+}
+
 export const api = {
   register: (email: string, password: string, name: string) =>
     apiFetch<AuthResponse>("/api/auth/register", { method: "POST", body: { email, password, name } }),
@@ -69,7 +77,7 @@ export const api = {
     apiFetch<{ user: { id: number; email: string; name: string } }>("/api/auth/me", { token }),
 
   saveLogs: (token: string, payload: LogPayload) =>
-    apiFetch<{ id: number; date: string; message: string }>("/api/logs", { method: "POST", body: payload, token }),
+    apiFetch<{ id: number; date: string; message: string; report?: DailyReport }>("/api/logs", { method: "POST", body: payload, token }),
 
   getLogs: (token: string, params?: { limit?: number; offset?: number; from?: string; to?: string }) => {
     const qs = params ? "?" + new URLSearchParams(
@@ -85,7 +93,7 @@ export const api = {
     apiFetch<{ message: string; date: string }>(`/api/logs/${date}`, { method: "DELETE", token }),
 
   insights: (token: string) =>
-    apiFetch<{ summary: Record<string, unknown>; insights: unknown[]; message?: string }>("/api/insights", { token }),
+    apiFetch<{ summary: Record<string, unknown> & { general_tips?: string[] }; insights: unknown[]; message?: string }>("/api/insights", { token }),
 
   health: () =>
     apiFetch<{ status: string; version: string }>("/api/health"),
