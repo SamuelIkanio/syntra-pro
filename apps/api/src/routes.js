@@ -2,132 +2,68 @@ const express = require("express");
 const { getDb } = require("./db");
 const { hashPassword, verifyPassword, signToken, authMiddleware } = require("./auth");
 const { runInsightEngine } = require("./insights");
-const {
-  registerSchema, loginSchema, createLogSchema,
-  getLogsQuerySchema, dateParamSchema,
-  validate, validateQuery, validateParams,
-} = require("./validation");
+const { registerSchema, loginSchema, createLogSchema, getLogsQuerySchema, dateParamSchema, validate, validateQuery, validateParams } = require("./validation");
 
 const router = express.Router();
-
-// ==================== AUTH ROUTES ====================
 
 router.post("/auth/register", validate(registerSchema), (req, res) => {
   try {
     const { email, password, name } = req.validatedBody;
     const db = getDb();
-
     const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
-    if (existing) {
-      return res.status(409).json({ error: "Email already registered" });
-    }
-
+    if (existing) return res.status(409).json({ error: "Email already registered" });
     const passwordHash = hashPassword(password);
-    const result = db.prepare(
-      "INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)"
-    ).run(email, passwordHash, name);
-
+    const result = db.prepare("INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)").run(email, passwordHash, name);
     const token = signToken({ sub: result.lastInsertRowid, email, name });
-
-    res.status(201).json({
-      token,
-      user: { id: result.lastInsertRowid, email, name },
-    });
-  } catch (err) {
-    console.error("Register error:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
+    res.status(201).json({ token, user: { id: result.lastInsertRowid, email, name } });
+  } catch (err) { console.error("Register error:", err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.post("/auth/login", validate(loginSchema), (req, res) => {
   try {
     const { email, password } = req.validatedBody;
     const db = getDb();
-
     const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
-    if (!user || !verifyPassword(password, user.password_hash)) {
-      return res.status(401).json({ error: "Invalid email or password" });
-    }
-
+    if (!user || !verifyPassword(password, user.password_hash)) return res.status(401).json({ error: "Invalid email or password" });
     const token = signToken({ sub: user.id, email: user.email, name: user.name });
-
-    res.json({
-      token,
-      user: { id: user.id, email: user.email, name: user.name },
-    });
-  } catch (err) {
-    console.error("Login error:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+  } catch (err) { console.error("Login error:", err); res.status(500).json({ error: "Internal server error" }); }
 });
 
-router.get("/auth/me", authMiddleware, (req, res) => {
-  res.json({ user: req.user });
-});
-
-// ==================== LOG ROUTES (Protected) ====================
+router.get("/auth/me", authMiddleware, (req, res) => { res.json({ user: req.user }); });
 
 router.post("/logs", authMiddleware, validate(createLogSchema), (req, res) => {
   try {
     const userId = req.user.id;
     const { date, energy, mood, stress, symptoms, meals, overallScore, notes, sleepHours, hydrationMl, exerciseMinutes } = req.validatedBody;
     const db = getDb();
-
     const upsertLog = db.transaction(() => {
       const existing = db.prepare("SELECT id FROM daily_logs WHERE user_id = ? AND date = ?").get(userId, date);
-
       let logId;
       if (existing) {
-        db.prepare(`
-          UPDATE daily_logs SET
-            energy_level = ?, mood = ?, stress_level = ?, overall_score = ?,
-            notes = ?, sleep_hours = ?, hydration_ml = ?, exercise_minutes = ?,
-            updated_at = datetime('now')
-          WHERE id = ?
-        `).run(energy, mood, stress, overallScore ?? null, notes, sleepHours, hydrationMl, exerciseMinutes, existing.id);
+        db.prepare("UPDATE daily_logs SET energy_level = ?, mood = ?, stress_level = ?, overall_score = ?, notes = ?, sleep_hours = ?, hydration_ml = ?, exercise_minutes = ?, updated_at = datetime('now') WHERE id = ?").run(energy, mood, stress, overallScore ?? null, notes, sleepHours, hydrationMl, exerciseMinutes, existing.id);
         logId = existing.id;
         db.prepare("DELETE FROM symptoms WHERE log_id = ?").run(logId);
         db.prepare("DELETE FROM diet_logs WHERE log_id = ?").run(logId);
       } else {
-        const result = db.prepare(`
-          INSERT INTO daily_logs (user_id, date, energy_level, mood, stress_level, overall_score, notes, sleep_hours, hydration_ml, exercise_minutes)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(userId, date, energy, mood, stress, overallScore ?? null, notes, sleepHours, hydrationMl, exerciseMinutes);
+        const result = db.prepare("INSERT INTO daily_logs (user_id, date, energy_level, mood, stress_level, overall_score, notes, sleep_hours, hydration_ml, exercise_minutes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(userId, date, energy, mood, stress, overallScore ?? null, notes, sleepHours, hydrationMl, exerciseMinutes);
         logId = Number(result.lastInsertRowid);
       }
-
-      const insertSymptom = db.prepare(
-        "INSERT INTO symptoms (log_id, date, name, severity) VALUES (?, ?, ?, ?)"
-      );
+      const insertSymptom = db.prepare("INSERT INTO symptoms (log_id, date, name, severity) VALUES (?, ?, ?, ?)");
       for (const s of symptoms) {
         const symptomName = typeof s === "string" ? s : s.name;
         const severity = typeof s === "object" && s.severity ? Number(s.severity) : 5;
         insertSymptom.run(logId, date, symptomName, severity);
       }
-
-      const insertMeal = db.prepare(
-        "INSERT INTO diet_logs (log_id, date, meal_type, description, health_score, calories, tags) VALUES (?, ?, ?, ?, ?, ?, ?)"
-      );
+      const insertMeal = db.prepare("INSERT INTO diet_logs (log_id, date, meal_type, description, health_score, calories, tags) VALUES (?, ?, ?, ?, ?, ?, ?)");
       for (const m of meals) {
-        insertMeal.run(
-          logId, date,
-          m.type || m.meal_type || "Snack",
-          m.description || "",
-          m.healthScore || m.health_score || 3,
-          m.calories || 0,
-          JSON.stringify(m.tags || [])
-        );
+        insertMeal.run(logId, date, m.type || m.meal_type || "Snack", m.description || "", m.healthScore || m.health_score || 3, m.calories || 0, JSON.stringify(m.tags || []));
       }
-
       return logId;
     });
-
     const logId = upsertLog();
     res.status(201).json({ id: logId, date, message: "Log saved successfully" });
-  } catch (err) {
-    console.error("POST /logs error:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
+  } catch (err) { console.error("POST /logs error:", err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.get("/logs", authMiddleware, validateQuery(getLogsQuerySchema), (req, res) => {
@@ -135,55 +71,30 @@ router.get("/logs", authMiddleware, validateQuery(getLogsQuerySchema), (req, res
     const userId = req.user.id;
     const db = getDb();
     const { limit, offset, from, to } = req.validatedQuery;
-
     let sql = "SELECT * FROM daily_logs WHERE user_id = ?";
     const params = [userId];
-
     if (from) { sql += " AND date >= ?"; params.push(from); }
     if (to) { sql += " AND date <= ?"; params.push(to); }
     sql += " ORDER BY date DESC";
     if (limit) { sql += " LIMIT ?"; params.push(limit); }
     if (offset) { sql += " OFFSET ?"; params.push(offset); }
-
     const logs = db.prepare(sql).all(...params);
-
     const getSymptoms = db.prepare("SELECT name, severity FROM symptoms WHERE log_id = ?");
     const getMeals = db.prepare("SELECT meal_type, description, health_score, calories, tags FROM diet_logs WHERE log_id = ?");
-
     const enriched = logs.map(log => ({
-      id: log.id,
-      date: log.date,
-      energy: log.energy_level,
-      mood: log.mood,
-      stress: log.stress_level,
-      overallScore: log.overall_score,
-      notes: log.notes,
-      sleepHours: log.sleep_hours,
-      hydrationMl: log.hydration_ml,
-      exerciseMinutes: log.exercise_minutes,
-      symptoms: getSymptoms.all(log.id).map(s => s.name),
-      meals: getMeals.all(log.id).map(m => ({
-        type: m.meal_type,
-        description: m.description,
-        healthScore: m.health_score,
-        calories: m.calories,
-        tags: JSON.parse(m.tags || "[]"),
-      })),
-      createdAt: log.created_at,
-      updatedAt: log.updated_at,
+      id: log.id, date: log.date, energy: log.energy_level, mood: log.mood, stress: log.stress_level,
+      overallScore: log.overall_score, notes: log.notes, sleepHours: log.sleep_hours, hydrationMl: log.hydration_ml,
+      exerciseMinutes: log.exercise_minutes, symptoms: getSymptoms.all(log.id).map(s => s.name),
+      meals: getMeals.all(log.id).map(m => ({ type: m.meal_type, description: m.description, healthScore: m.health_score, calories: m.calories, tags: JSON.parse(m.tags || "[]") })),
+      createdAt: log.created_at, updatedAt: log.updated_at,
     }));
-
     let countSql = "SELECT COUNT(*) as count FROM daily_logs WHERE user_id = ?";
     const countParams = [userId];
     if (from) { countSql += " AND date >= ?"; countParams.push(from); }
     if (to) { countSql += " AND date <= ?"; countParams.push(to); }
     const { count } = db.prepare(countSql).get(...countParams);
-
     res.json({ logs: enriched, total: count });
-  } catch (err) {
-    console.error("GET /logs error:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
+  } catch (err) { console.error("GET /logs error:", err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.get("/logs/:date", authMiddleware, validateParams(dateParamSchema), (req, res) => {
@@ -191,41 +102,18 @@ router.get("/logs/:date", authMiddleware, validateParams(dateParamSchema), (req,
     const userId = req.user.id;
     const db = getDb();
     const { date } = req.validatedParams;
-
     const log = db.prepare("SELECT * FROM daily_logs WHERE user_id = ? AND date = ?").get(userId, date);
-    if (!log) {
-      return res.status(404).json({ error: "Log not found" });
-    }
-
+    if (!log) return res.status(404).json({ error: "Log not found" });
     const symptoms = db.prepare("SELECT name, severity FROM symptoms WHERE log_id = ?").all(log.id);
     const meals = db.prepare("SELECT meal_type, description, health_score, calories, tags FROM diet_logs WHERE log_id = ?").all(log.id);
-
     res.json({
-      id: log.id,
-      date: log.date,
-      energy: log.energy_level,
-      mood: log.mood,
-      stress: log.stress_level,
-      overallScore: log.overall_score,
-      notes: log.notes,
-      sleepHours: log.sleep_hours,
-      hydrationMl: log.hydration_ml,
-      exerciseMinutes: log.exercise_minutes,
-      symptoms: symptoms.map(s => s.name),
-      meals: meals.map(m => ({
-        type: m.meal_type,
-        description: m.description,
-        healthScore: m.health_score,
-        calories: m.calories,
-        tags: JSON.parse(m.tags || "[]"),
-      })),
-      createdAt: log.created_at,
-      updatedAt: log.updated_at,
+      id: log.id, date: log.date, energy: log.energy_level, mood: log.mood, stress: log.stress_level,
+      overallScore: log.overall_score, notes: log.notes, sleepHours: log.sleep_hours, hydrationMl: log.hydration_ml,
+      exerciseMinutes: log.exercise_minutes, symptoms: symptoms.map(s => s.name),
+      meals: meals.map(m => ({ type: m.meal_type, description: m.description, healthScore: m.health_score, calories: m.calories, tags: JSON.parse(m.tags || "[]") })),
+      createdAt: log.created_at, updatedAt: log.updated_at,
     });
-  } catch (err) {
-    console.error("GET /logs/:date error:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
+  } catch (err) { console.error("GET /logs/:date error:", err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.delete("/logs/:date", authMiddleware, validateParams(dateParamSchema), (req, res) => {
@@ -233,35 +121,22 @@ router.delete("/logs/:date", authMiddleware, validateParams(dateParamSchema), (r
     const userId = req.user.id;
     const db = getDb();
     const { date } = req.validatedParams;
-
     const log = db.prepare("SELECT id FROM daily_logs WHERE user_id = ? AND date = ?").get(userId, date);
-    if (!log) {
-      return res.status(404).json({ error: "Log not found" });
-    }
-
+    if (!log) return res.status(404).json({ error: "Log not found" });
     db.prepare("DELETE FROM symptoms WHERE log_id = ?").run(log.id);
     db.prepare("DELETE FROM diet_logs WHERE log_id = ?").run(log.id);
     db.prepare("DELETE FROM daily_logs WHERE id = ?").run(log.id);
-
     res.json({ message: "Log deleted successfully", date });
-  } catch (err) {
-    console.error("DELETE /logs/:date error:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
+  } catch (err) { console.error("DELETE /logs/:date error:", err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.get("/insights", authMiddleware, async (req, res) => {
   try {
     const result = await runInsightEngine(req.user.id);
     res.json(result);
-  } catch (err) {
-    console.error("GET /insights error:", err);
-    res.status(500).json({ error: "Failed to generate insights", details: err.message });
-  }
+  } catch (err) { console.error("GET /insights error:", err); res.status(500).json({ error: "Failed to generate insights", details: err.message }); }
 });
 
-router.get("/health", (req, res) => {
-  res.json({ status: "ok", version: "2.0.0-pro", timestamp: new Date().toISOString() });
-});
+router.get("/health", (req, res) => { res.json({ status: "ok", version: "2.0.0-pro", timestamp: new Date().toISOString() }); });
 
 module.exports = router;

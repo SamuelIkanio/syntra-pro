@@ -94,7 +94,12 @@ function DailyLogPage() {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg-primary bg-mesh">
-        <Loader2 className="w-8 h-8 text-accent-indigo animate-spin" />
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        >
+          <Loader2 className="w-8 h-8 text-accent-indigo" />
+        </motion.div>
       </div>
     );
   }
@@ -106,7 +111,7 @@ function DailyLogPage() {
   return (
     <main className="flex flex-col min-h-screen">
       <Header />
-      <div className="flex-1 w-full max-w-lg mx-auto px-4 pb-28 pt-4 space-y-5">
+      <div className="flex-1 w-full max-w-lg mx-auto px-4 pb-28 pt-20 space-y-5">
         <QuickLogSummary log={log} overallScore={overallScore} />
         <EnergyMoodSliders
           energy={log.energy}
@@ -135,7 +140,6 @@ function DailyLogPage() {
           onExerciseChange={(v) => setLog((p) => ({ ...p, exerciseMinutes: v }))}
         />
 
-        {/* Notes */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -157,26 +161,37 @@ function DailyLogPage() {
         </motion.div>
       </div>
 
-      {/* Floating save button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-bg-primary via-bg-primary/95 to-transparent">
+      <div className="fixed bottom-0 left-0 right-0 p-4 z-40" style={{ background: "linear-gradient(to top, #020617 0%, #020617ee 50%, transparent 100%)" }}>
         <div className="max-w-lg mx-auto">
           <motion.button
+            whileHover={{
+              scale: 1.01,
+              boxShadow: saveState === "saved"
+                ? "0 0 30px rgba(52, 211, 153, 0.4)"
+                : "0 0 30px rgba(129, 140, 248, 0.4), 0 0 60px rgba(129, 140, 248, 0.15)",
+            }}
             whileTap={{ scale: 0.97 }}
             onClick={handleSave}
             disabled={saveState === "saving"}
-            className={`w-full py-3.5 rounded-2xl font-semibold text-white text-base flex items-center justify-center gap-2 transition-all duration-300 shadow-xl ${
+            className={`btn-premium-save w-full py-3.5 rounded-2xl font-semibold text-white text-base flex items-center justify-center gap-2 transition-all duration-300 ${
               saveState === "saved"
-                ? "bg-accent-green shadow-accent-green/25"
-                : "bg-gradient-to-r from-accent-indigo to-accent-violet shadow-accent-indigo/25 hover:shadow-accent-indigo/40"
+                ? "bg-accent-green shadow-xl shadow-accent-green/25"
+                : "bg-gradient-to-r from-accent-indigo to-accent-violet shadow-xl shadow-accent-indigo/25"
             }`}
           >
             {saveState === "saving" ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}>
+                <Loader2 className="w-5 h-5" />
+              </motion.div>
             ) : saveState === "saved" ? (
-              <>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="flex items-center gap-2"
+              >
                 <CheckCircle className="w-5 h-5" />
                 Log Saved!
-              </>
+              </motion.div>
             ) : (
               <>
                 <Save className="w-5 h-5" />

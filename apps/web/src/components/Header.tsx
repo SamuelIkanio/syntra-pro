@@ -17,15 +17,18 @@ export default function Header() {
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.4 }}
-      className="sticky top-0 z-30 glass-card rounded-none border-x-0 border-t-0"
+      className="fixed top-0 left-0 right-0 z-50 header-glass"
     >
       <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-indigo to-accent-violet flex items-center justify-center shadow-lg shadow-accent-indigo/20">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-indigo to-accent-violet flex items-center justify-center shadow-lg shadow-accent-indigo/30"
+            >
               <Activity className="w-5 h-5 text-white" strokeWidth={2.5} />
-            </div>
-            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-accent-green border-2 border-bg-primary" />
+            </motion.div>
+            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-accent-green border-2 border-bg-primary animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
@@ -41,24 +44,34 @@ export default function Header() {
         </div>
         <div className="flex items-center gap-2">
           {user && (
-            <span className="text-xs text-text-secondary mr-1 hidden min-[380px]:inline">
+            <span className="text-xs text-text-secondary mr-1 hidden min-[380px]:inline font-medium">
               {user.name.split(" ")[0]}
             </span>
           )}
-          <button className="w-9 h-9 rounded-xl glass-card flex items-center justify-center text-text-muted hover:text-accent-indigo transition-colors">
+          <motion.button
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-9 h-9 rounded-xl glass-card flex items-center justify-center text-text-muted hover:text-accent-indigo transition-colors"
+          >
             <Bell className="w-[18px] h-[18px]" />
-          </button>
-          <button className="w-9 h-9 rounded-xl glass-card flex items-center justify-center text-text-muted hover:text-accent-indigo transition-colors">
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-9 h-9 rounded-xl glass-card flex items-center justify-center text-text-muted hover:text-accent-indigo transition-colors"
+          >
             <Shield className="w-[18px] h-[18px]" />
-          </button>
+          </motion.button>
           {user && (
-            <button
+            <motion.button
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.95 }}
               onClick={logout}
               className="w-9 h-9 rounded-xl glass-card flex items-center justify-center text-text-muted hover:text-accent-rose transition-colors"
               title="Logout"
             >
               <LogOut className="w-[18px] h-[18px]" />
-            </button>
+            </motion.button>
           )}
         </div>
       </div>

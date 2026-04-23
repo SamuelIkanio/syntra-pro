@@ -1,6 +1,4 @@
-const API_BASE = typeof window !== "undefined"
-  ? (localStorage.getItem("SYNTRA_API_URL") || "")
-  : "";
+const API_BASE = "https://transcription-statute-landing-achieving.trycloudflare.com";
 
 interface ApiOptions {
   method?: string;
@@ -77,7 +75,7 @@ export const api = {
     const qs = params ? "?" + new URLSearchParams(
       Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])
     ).toString() : "";
-    return apiFetch<{ logs: LogResponse[]; total: number }>(`/api/logs${qs}`, { token });
+    return apiFetch<{ logs: LogResponse[]; total: number }>((`/api/logs${qs}`), { token });
   },
 
   getLog: (token: string, date: string) =>
